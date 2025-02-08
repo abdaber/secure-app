@@ -16,6 +16,12 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+// Главная страница
+router.get("/", (req, res) => {
+  res.render("index", { title: "Welcome" });
+});
+
+
 // registration route
 router.get("/register", (req, res) => res.render("register", { error: null }));
 router.post("/register", async (req, res) => {
