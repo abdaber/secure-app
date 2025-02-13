@@ -9,4 +9,4 @@ const userSchema = new mongoose.Schema({
   lockUntil: { type: Date, default: null },
 });
 
-module.exports = mongoose.model("User", userSchema);
+module.exports = mongoose.model("abdabda", userSchema);

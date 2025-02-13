@@ -16,35 +16,28 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// Главная страница
 router.get("/", (req, res) => {
   res.render("index", { title: "Welcome" });
 });
 
-// Регистрация
 router.get("/register", (req, res) => res.render("register", { error: null }));
 router.post("/register", async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    // Проверка, чтобы все поля были заполнены
     if (!name || !email || !password) {
       return res.render("register", { error: "All fields are required." });
     }
 
-    // Проверка, зарегистрирован ли email
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.render("register", { error: "This email has already been registered." });
     }
 
-    // Хэширование пароля
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Сохранение пользователя
     await new User({ name, email, password: hashedPassword }).save();
 
-    // Перенаправление на страницу логина
     res.redirect("/login");
   } catch (err) {
     console.error("Registration error:", err);
@@ -52,24 +45,20 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// Логин
 router.get("/login", (req, res) => res.render("login", { error: null }));
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Проверка, чтобы все поля были заполнены
     if (!email || !password) {
       return res.render("login", { error: "Email and password are required." });
     }
 
-    // Поиск пользователя
     const user = await User.findOne({ email });
     if (!user) {
       return res.render("login", { error: "Invalid email or password." });
     }
 
-    // Проверка блокировки аккаунта
     if (user.lockUntil && user.lockUntil > Date.now()) {
       const remainingTime = Math.ceil((user.lockUntil - Date.now()) / 1000 / 60);
       return res.render("login", {
@@ -77,12 +66,10 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // Проверка пароля
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       user.loginAttempts += 1;
 
-      // Блокировка при 5 неудачных попытках
       if (user.loginAttempts >= 5) {
         user.lockUntil = Date.now() + 10 * 60 * 1000;
         user.loginAttempts = 0;
@@ -96,12 +83,10 @@ router.post("/login", async (req, res) => {
       return res.render("login", { error: "Invalid email or password." });
     }
 
-    // Сброс счетчика неудачных попыток и времени блокировки
     user.loginAttempts = 0;
     user.lockUntil = null;
     await user.save();
 
-    // Сохранение данных пользователя в сессии
     req.session.user = { _id: user._id, name: user.name, email: user.email, avatar: user.avatar };
 
     res.redirect("/dashboard");
@@ -111,7 +96,6 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// Панель управления (доступна только авторизованным пользователям)
 router.get("/dashboard", async (req, res) => {
   if (!req.session.user) return res.redirect("/login");
 
@@ -124,12 +108,10 @@ router.get("/dashboard", async (req, res) => {
   res.render("dashboard", { user });
 });
 
-// Выход из системы
 router.get("/logout", (req, res) => {
   req.session.destroy(() => res.redirect("/login"));
 });
 
-// Загрузка аватара
 router.post("/upload", upload.single("avatar"), async (req, res) => {
   try {
     if (!req.session.user) return res.redirect("/login");
